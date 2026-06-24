@@ -1,101 +1,90 @@
 #!/bin/bash
-# GHOST CMD - Agent Installer (Ubuntu 22.04 Fixed v2)
-# Run on each agent server
+
+# ==========================================
+# 🚀 GHOST CMD - AGENT INSTALLER
+# ==========================================
+# Auto-install, update, dan restart agent
+# Usage: sudo bash install.sh
+
 set -e
 
 echo "🚀 GHOST CMD Agent Installer"
-echo "============================"
+echo "======================================"
 
 # Check if running as root
-if [ "$EUID" -ne 0 ]; then
-    echo "❌ Please run as root: sudo bash install-agent.sh"
-    exit 1
+if [[ $EUID -ne 0 ]]; then
+   echo "❌ Script harus dijalankan dengan sudo!"
+   exit 1
 fi
 
 # ==========================================
-# 1. Get Dashboard URL
+# 1️⃣ SETUP VARIABLES
 # ==========================================
-read -p "📊 Enter Dashboard URL (e.g., https://dashboard.jujulefek.qzz.io): " DASHBOARD_URL
-if [ -z "$DASHBOARD_URL" ]; then
-    echo "❌ Dashboard URL cannot be empty"
-    exit 1
-fi
+AGENT_DIR="/opt/ghost-cmd/agent"
+REPO_URL="https://github.com/umnodqib/ghost-cmd.git"
+SERVICE_NAME="ghost-agent"
+PYTHON_CMD=$(which python3 || which python)
 
-# ==========================================
-# 2. System Update & Dependencies (Clean 22.04)
-# ==========================================
-echo "📦 Updating system packages..."
-
-apt-get update && apt-get upgrade -y
-
-# Enable universe repository
-apt-get install -y software-properties-common
-add-apt-repository universe -y
-apt-get update
-
-echo "📦 Installing Chrome + XVFB dependencies..."
-apt-get install -y \
-    python3 python3-pip python3-venv git curl wget \
-    xvfb x11-utils \
-    libasound2t64 \
-    libatk1.0-0t64 libatk-bridge2.0-0t64 \
-    libx11-6 libxcb1 libxcomposite1 libxdamage1 libxrandr2 libxtst6 \
-    libnss3 libnspr4 \
-    libgtk-3-0t64 libgbm1 libxshmfence1 \
-    libdbus-1-3 \
-    fonts-liberation ca-certificates libcups2 libdrm2
-
-echo "✅ Dependencies installed successfully"
+echo "📦 Python: $PYTHON_CMD"
+echo "📁 Agent Dir: $AGENT_DIR"
 
 # ==========================================
-# 3. Install Google Chrome
+# 2️⃣ CREATE/UPDATE AGENT DIRECTORY
 # ==========================================
-echo "🌐 Installing Google Chrome..."
-if ! command -v google-chrome &> /dev/null; then
-    echo "📦 Adding Google Chrome repository..."
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-    
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
-    
-    apt-get update
-    apt-get install -y google-chrome-stable
-    echo "✅ Google Chrome installed"
+if [ ! -d "$AGENT_DIR" ]; then
+    echo "📥 Clone repository..."
+    mkdir -p /opt/ghost-cmd
+    cd /opt/ghost-cmd
+    git clone "$REPO_URL" .
 else
-    echo "✅ Google Chrome already installed"
+    echo "🔄 Update repository..."
+    cd "$AGENT_DIR"
+    git pull origin main
+fi
+
+cd "$AGENT_DIR"
+echo "✅ Repository ready at $AGENT_DIR"
+
+# ==========================================
+# 3️⃣ INSTALL PYTHON DEPENDENCIES
+# ==========================================
+echo "📦 Installing Python dependencies..."
+
+if [ -f "requirements.txt" ]; then
+    $PYTHON_CMD -m pip install --upgrade pip -q
+    $PYTHON_CMD -m pip install -r requirements.txt -q
+    echo "✅ Dependencies installed"
+else
+    echo "⚠️ requirements.txt not found, skipping pip install"
 fi
 
 # ==========================================
-# 4. Setup Python Environment
+# 4️⃣ CONFIGURE ENVIRONMENT
 # ==========================================
-echo "🐍 Setting up Python virtual environment..."
-if [ ! -d "venv" ]; then
-    python3 -m venv venv
-fi
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+echo "⚙️ Configuring environment..."
 
-# ==========================================
-# 5. Create directories
-# ==========================================
-echo "📁 Creating directories..."
-mkdir -p chrome_profiles logs
-
-# ==========================================
-# 6. Create .env file
-# ==========================================
-echo "⚙️ Creating .env configuration..."
-cat > .env <<EOF
+# Create .env file if not exists
+if [ ! -f "$AGENT_DIR/.env" ]; then
+    echo "📝 Creating .env file..."
+    read -p "📡 Enter Dashboard URL [https://dashboard.jujulefek.qzz.io]: " DASHBOARD_URL
+    DASHBOARD_URL="${DASHBOARD_URL:-https://dashboard.jujulefek.qzz.io}"
+    
+    cat > "$AGENT_DIR/.env" << EOF
 DASHBOARD_URL=$DASHBOARD_URL
 AUTH_KEY=GHOST_SECRET_2026
 EOF
+    echo "✅ .env created"
+else
+    echo "✅ .env already exists"
+    cat "$AGENT_DIR/.env"
+fi
 
 # ==========================================
-# 7. Create Systemd Service
+# 5️⃣ CREATE SYSTEMD SERVICE
 # ==========================================
-echo "⚙️ Creating ghost-agent systemd service..."
+echo "🔧 Setting up systemd service..."
 
-cat > /etc/systemd/system/ghost-agent.service <<EOF
+cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
 [Unit]
 Description=GHOST CMD Agent
 After=network.target
@@ -103,45 +92,73 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$(pwd)
-EnvironmentFile=$(pwd)/.env
-ExecStart=$(pwd)/venv/bin/python3 agent.py
+WorkingDirectory=$AGENT_DIR
+EnvironmentFile=$AGENT_DIR/.env
+ExecStart=$PYTHON_CMD $AGENT_DIR/agent.py
 Restart=always
 RestartSec=10
-Environment=PYTHONUNBUFFERED=1
-Environment=DISPLAY=:99
-XDG_RUNTIME_DIR=/run/user/0
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+# Reload systemd
 systemctl daemon-reload
-systemctl enable ghost-agent.service
+echo "✅ Systemd service created"
 
 # ==========================================
-# 8. Start Service
+# 6️⃣ CREATE DIRECTORIES
+# ==========================================
+echo "📁 Creating required directories..."
+mkdir -p "$AGENT_DIR/chrome_profiles"
+mkdir -p "$AGENT_DIR/logs"
+chmod -R 755 "$AGENT_DIR"
+echo "✅ Directories ready"
+
+# ==========================================
+# 7️⃣ START/RESTART SERVICE
 # ==========================================
 echo "🚀 Starting agent service..."
-systemctl start ghost-agent.service
 
-sleep 3
+if systemctl is-active --quiet $SERVICE_NAME; then
+    echo "🔄 Restarting $SERVICE_NAME..."
+    systemctl restart $SERVICE_NAME
+else
+    echo "▶️ Starting $SERVICE_NAME..."
+    systemctl start $SERVICE_NAME
+    systemctl enable $SERVICE_NAME
+fi
+
+# Wait untuk service start
+sleep 2
+
+# Check status
+if systemctl is-active --quiet $SERVICE_NAME; then
+    echo "✅ Service is running!"
+else
+    echo "⚠️ Service might still be starting, check with: sudo systemctl status $SERVICE_NAME"
+fi
 
 # ==========================================
-# 9. Final Message
+# 8️⃣ DISPLAY INFO
 # ==========================================
 echo ""
-echo "✅ Agent Installation Complete! (Ubuntu 22.04)"
-echo "============================"
-echo "📊 Dashboard URL : $DASHBOARD_URL"
-echo "🚀 Agent running on http://localhost:7860"
+echo "======================================"
+echo "✅ GHOST CMD Agent Installed!"
+echo "======================================"
 echo ""
-echo "🔧 Service commands:"
-echo "   systemctl status ghost-agent"
-echo "   systemctl restart ghost-agent"
-echo "   journalctl -u ghost-agent -f"
+echo "📋 Commands:"
+echo "  Start:    sudo systemctl start $SERVICE_NAME"
+echo "  Stop:     sudo systemctl stop $SERVICE_NAME"
+echo "  Restart:  sudo systemctl restart $SERVICE_NAME"
+echo "  Status:   sudo systemctl status $SERVICE_NAME"
+echo "  Logs:     sudo journalctl -u $SERVICE_NAME -f"
+echo "  Update:   cd $AGENT_DIR && sudo bash install.sh"
 echo ""
-echo "🎉 Selesai!"
+echo "📊 Agent running on: http://localhost:7860"
+echo "📡 Dashboard: $(grep DASHBOARD_URL $AGENT_DIR/.env | cut -d= -f2)"
 echo ""
-
-systemctl status ghost-agent --no-pager -l
+echo "🎯 Next step: Monitor logs dengan 'sudo journalctl -u $SERVICE_NAME -f'"
+echo "======================================"
