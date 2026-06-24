@@ -52,7 +52,7 @@ class SlotManager:
     def __init__(self):
         self.slots = {}
         self.lock = threading.Lock()
-        self.last_hash = None  # Track data changes
+        self.last_hash = None
         self.load_all_slots()
     
     def load_all_slots(self):
@@ -107,7 +107,11 @@ class SlotManager:
         return self.slots.get(slot_id, {})
     
     def get_all_slots(self):
-        """Get all slots"""
+        """Get all slots - hanya yang ada agent (online/busy)"""
+        return [s for s in self.slots.values() if s['agent_url']]
+    
+    def get_all_slots_full(self):
+        """Get semua slots untuk internal"""
         return list(self.slots.values())
     
     def get_hash(self):
@@ -130,12 +134,13 @@ class SlotManager:
         if ip:
             slot["ip"] = ip
         
+        # Status logic yang benar
         if "BUSY" in status:
             slot["isLooping"] = True
             slot["isOffline"] = False
-        elif "IDLE" in status or "Connected" in status:
+        elif "IDLE" in status or "Connected" in status or "READY" in status:
             slot["isLooping"] = False
-            slot["isOffline"] = False
+            slot["isOffline"] = False  # IDLE = ONLINE tapi tidak sibuk
         else:
             slot["isOffline"] = True
         
@@ -167,7 +172,7 @@ def index():
 
 @app.route('/api/status')
 def status():
-    """Get dashboard status"""
+    """Get dashboard status - hanya dari active slots"""
     slots = slot_manager.get_all_slots()
     
     online = sum(1 for s in slots if not s['isOffline'])
@@ -184,7 +189,7 @@ def status():
 
 @app.route('/api/slots')
 def get_slots():
-    """Get all slots data"""
+    """Get hanya active slots saja (yang ada agent)"""
     return jsonify(slot_manager.get_all_slots())
 
 @app.route('/api/slots/check')
@@ -232,7 +237,7 @@ def register_agent():
     # Find available slot
     for slot_id in range(1, MAX_SLOTS + 1):
         slot = slot_manager.get_slot(slot_id)
-        if slot['isOffline'] or slot['status'] == '- Kosong -':
+        if slot['isOffline'] or slot['status'] == '- Kosong -' or not slot['agent_url']:
             # Assign slot
             slot['agent_url'] = agent_url
             slot['ip'] = agent_ip
@@ -282,6 +287,7 @@ def ack_slot():
     
     slot = slot_manager.get_slot(slot_id)
     slot['status'] = '✅ READY'
+    slot['isOffline'] = False
     slot_manager.save_slot(slot_id, slot)
     
     return jsonify({"status": "ack_received"})
