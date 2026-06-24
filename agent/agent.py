@@ -100,6 +100,65 @@ def report_status(state, msg=""):
         print(f"[REPORT] Error: {e}", flush=True)
 
 # ==========================================
+# 📧 CREDENTIAL LOADER (NEW)
+# ==========================================
+def load_credentials():
+    """
+    ✅ NEW: Load credentials dari berbagai format:
+    1. Plain email (dari email.txt)
+    2. Email:password (dari credentials.json)
+    """
+    credentials = []
+    
+    # Priority 1: Check untuk credentials.json (dari format email:password)
+    if os.path.exists('credentials.json'):
+        try:
+            with open('credentials.json', 'r') as f:
+                credentials = json.load(f)
+                print(f"✅ [CRED] Loaded {len(credentials)} credentials dari JSON", flush=True)
+                return credentials
+        except Exception as e:
+            print(f"⚠️ [CRED] Error loading JSON: {e}", flush=True)
+    
+    # Priority 2: Plain email.txt (backward compatible)
+    if os.path.exists('email.txt'):
+        try:
+            with open('email.txt', 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    if ':' in line:
+                        # Format: email:password
+                        parts = line.split(':', 1)
+                        credentials.append({
+                            'email': parts[0].strip(),
+                            'password': parts[1].strip()
+                        })
+                    else:
+                        # Plain email only
+                        credentials.append({
+                            'email': line,
+                            'password': ''
+                        })
+            
+            print(f"✅ [CRED] Loaded {len(credentials)} credentials dari email.txt", flush=True)
+            
+            # Save ke JSON untuk next time
+            if credentials and not os.path.exists('credentials.json'):
+                try:
+                    with open('credentials.json', 'w') as f:
+                        json.dump(credentials, f, indent=2)
+                except:
+                    pass
+                    
+        except Exception as e:
+            print(f"⚠️ [CRED] Error loading email.txt: {e}", flush=True)
+    
+    return credentials
+
+# ==========================================
 # 🛠️ PROCESS MANAGER
 # ==========================================
 
@@ -155,7 +214,7 @@ def kill_processes():
                     p.kill()
                 except: pass
         except: pass
-            
+             
     time.sleep(2)
     
     try:
@@ -224,12 +283,31 @@ def auto_register():
 
                 print(f"\n✅ [INIT] TERDAFTAR DI SLOT: {CURRENT_SLOT}", flush=True)
                 
-                emails = locker.get('emails', [])
-                links = locker.get('links', [])
-                with open('email.txt', 'w') as f: f.write("\n".join(emails) + "\n")
-                with open('link.txt', 'w') as f: f.write("\n".join(links) + "\n")
+                # ✅ NEW: Handle both plain email dan email:password format
+                format_type = locker.get('format_type', 'plain_email')
+                
+                if format_type == 'email_password':
+                    # Email:password format - save ke credentials.json
+                    credentials = locker.get('credentials', [])
+                    with open('credentials.json', 'w') as f:
+                        json.dump(credentials, f, indent=2)
+                    
+                    # Also save emails untuk backward compatibility
+                    emails = locker.get('emails', [])
+                    with open('email.txt', 'w') as f:
+                        f.write("\n".join(emails) + "\n")
+                    
+                    print(f"✅ [INIT] Saved {len(credentials)} credentials (email:password format)", flush=True)
+                
+                else:
+                    # Plain email format
+                    emails = locker.get('emails', [])
+                    with open('email.txt', 'w') as f:
+                        f.write("\n".join(emails) + "\n")
+                    
+                    print(f"✅ [INIT] Saved {len(emails)} emails (plain format)", flush=True)
+                
                 os.system("sed -i '/^$/d' email.txt")
-                os.system("sed -i '/^$/d' link.txt")
 
                 ack_success = False
                 for i in range(5): 
@@ -338,6 +416,7 @@ def index():
         <h1>🚀 GHOST CMD Agent</h1>
         <p>Slot: <b id="slot">-</b></p>
         <p>Status: <b id="status">IDLE</b></p>
+        <p style="font-size:12px; color:#666;">Format: <b id="format">-</b></p>
     </body>
     <script>
         setInterval(async () => {
@@ -346,6 +425,7 @@ def index():
                 const data = await res.json();
                 document.getElementById('slot').innerText = data.slot || '-';
                 document.getElementById('status').innerText = data.state || 'IDLE';
+                document.getElementById('format').innerText = data.format_type || '-';
             } catch(e) {}
         }, 2000);
     </script>
@@ -364,11 +444,17 @@ def status():
     state = "IDLE"
     if check_process(FILE_LOGIN): state = "BUSY_LOGIN"
     if check_process(FILE_LOOP): state = "BUSY_LOOP"
+    
+    # ✅ NEW: Include format type di status
+    format_type = "email_password" if os.path.exists('credentials.json') else "plain_email"
+    
     return jsonify({
         "slot": CURRENT_SLOT,
         "login": check_process(FILE_LOGIN),
         "loop": check_process(FILE_LOOP),
-        "state": state
+        "state": state,
+        "format_type": format_type,
+        "credentials_count": len(load_credentials())
     })
 
 @app.route('/start/login', methods=['POST'])
