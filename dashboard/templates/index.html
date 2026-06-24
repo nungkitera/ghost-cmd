@@ -28,6 +28,10 @@
 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Smooth transitions untuk status updates */
+        .status-update { animation: pulse 0.6s ease-in-out; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
 </head>
 <body class="p-3 md:p-6 lg:p-8 min-h-screen relative overflow-x-hidden pb-44 md:pb-32">
@@ -48,7 +52,7 @@
                     </p>
                 </div>
                 <div>
-                    <button onclick="reloadData()" class="text-[9px] md:text-[10px] text-gray-500 hover:text-white hover:bg-indigo-900/30 border border-gray-800 hover:border-indigo-900/50 px-2 py-1.5 md:px-3 md:py-2 rounded-lg transition">🔄 SYNC</button>
+                    <button onclick="reloadData()" class="text-[9px] md:text-[10px] text-gray-500 hover:text-white hover:bg-indigo-900/30 border border-gray-800 hover:border-indigo-900/50 px-2 py-[6px] md:px-3 md:py-2 rounded-lg transition">🔄 SYNC</button>
                 </div>
             </div>
         </div>
@@ -62,7 +66,7 @@
 
     <!-- Bottom Controls -->
     <div class="fixed bottom-4 md:bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-[95%] max-w-4xl">
-        <div class="bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 p-2 md:p-3 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] flex overflow-x-auto hide-scrollbar gap-2 md:justify-center md:flex-wrap items-center">
+        <div class="bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 p-2 md:p-3 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] flex overflow-x-auto hide-scrollbar gap-2 md:justify-center md:flex-wrap">
             
             <button onclick="toggleSelectAll()" id="select-all-btn" class="shrink-0 flex-1 min-w-[65px] bg-black/50 hover:bg-gray-800 border border-gray-700/50 text-gray-400 px-2 py-2.5 rounded-xl text-[10px] font-bold transition-all shadow-lg active:scale-95 flex flex-col items-center justify-center gap-1 group">
                 <span class="text-sm group-hover:scale-110 transition-transform">🔲</span>
@@ -141,16 +145,16 @@
             <div class="p-4 md:p-5 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 bg-[#0a0a0a]">
                 <div class="flex flex-col relative group">
                     <label class="text-[10px] font-black text-blue-500 mb-2 tracking-widest uppercase flex items-center gap-1"><span>📧</span> Daftar Email</label>
-                    <textarea id="m_emails" class="flex-1 min-h-[150px] md:min-h-[200px] bg-black border border-gray-800 focus:border-blue-500 rounded-xl p-3 text-xs text-gray-300 resize-none outline-none font-mono transition group-hover:border-blue-900/50"></textarea>
+                    <textarea id="m_emails" class="flex-1 min-h-[150px] md:min-h-[200px] bg-black border border-gray-800 focus:border-blue-500 rounded-xl p-3 text-xs text-gray-300 resize-none outline-none font-mono focus:ring-1 focus:ring-blue-500/50"></textarea>
                 </div>
                 <div class="flex flex-col relative group">
                     <label class="text-[10px] font-black text-purple-500 mb-2 tracking-widest uppercase flex items-center gap-1"><span>🔗</span> Link Target</label>
-                    <textarea id="m_links" class="flex-1 min-h-[150px] md:min-h-[200px] bg-black border border-gray-800 focus:border-purple-500 rounded-xl p-3 text-xs text-gray-300 resize-none outline-none font-mono transition group-hover:border-purple-900/50"></textarea>
+                    <textarea id="m_links" class="flex-1 min-h-[150px] md:min-h-[200px] bg-black border border-gray-800 focus:border-purple-500 rounded-xl p-3 text-xs text-gray-300 resize-none outline-none font-mono focus:ring-1 focus:ring-purple-500/50"></textarea>
                 </div>
             </div>
             <div class="p-4 border-t border-gray-800 flex flex-col md:flex-row gap-3 bg-[#151515]">
                 <button onclick="closeModal()" class="px-4 border border-gray-700 hover:bg-gray-800 text-gray-400 py-3 rounded-xl text-xs font-bold transition active:scale-[0.98] w-full md:w-auto">BATAL</button>
-                <button onclick="save()" id="btnSave" class="flex-1 bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-600 hover:to-purple-600 text-white py-3 rounded-xl text-xs font-bold transition shadow-lg active:scale-[0.98] w-full">SIMPAN DATA</button>
+                <button onclick="save()" id="btnSave" class="flex-1 bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-600 hover:to-purple-600 text-white py-3 rounded-xl text-xs font-bold transition active:scale-95 shadow-lg">💾 SIMPAN</button>
             </div>
         </div>
     </div>
@@ -177,7 +181,7 @@
                 </div>
             </div>
             <div class="p-4 border-t border-gray-800 bg-[#0d1612]">
-                <button onclick="saveBulk()" id="btnBulkSave" class="w-full bg-gradient-to-r from-emerald-700 to-green-700 hover:from-emerald-600 hover:to-green-600 text-white py-3.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-[0.98]">UPLOAD KE SLOT</button>
+                <button onclick="saveBulk()" id="btnBulkSave" class="w-full bg-gradient-to-r from-emerald-700 to-green-700 hover:from-emerald-600 hover:to-green-600 text-white py-3.5 rounded-xl text-xs font-bold transition active:scale-95 shadow-lg">📤 UPLOAD</button>
             </div>
         </div>
     </div>
@@ -204,6 +208,8 @@
         let checkedSlots = new Set();
         let currentGrid = localStorage.getItem('ghost_grid') || 6;
         let allSlots = [];
+        let autoRefreshInterval = null;
+        let lastDataHash = null;
         document.documentElement.style.setProperty('--ghost-grid', currentGrid);
 
         // ==================== HELPER FUNCTIONS ====================
@@ -296,12 +302,12 @@
 
             allSlots.forEach(slot => {
                 const cardHTML = `
-                <div class="relative bg-[#111] ${slot.isOffline ? 'border-gray-800/60 bg-[#0b0c10]' : 'border-purple-900/60'} rounded-2xl p-4 md:p-5 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group border">
+                <div class="relative bg-[#111] ${slot.isOffline ? 'border-gray-800/60 bg-[#0b0c10]' : 'border-purple-900/60'} rounded-2xl p-4 md:p-5 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 status-update">
                     <div>
                         <div class="flex justify-between items-start mb-3">
                             <div class="w-full overflow-hidden">
                                 <div class="flex items-center gap-2 mb-0.5">
-                                    <input type="checkbox" class="slot-cb w-4 h-4 rounded border-gray-700 bg-black/50 text-indigo-500 focus:ring-indigo-500 cursor-pointer transition" value="${slot.id}" onchange="handleCheckbox(this)">
+                                    <input type="checkbox" class="slot-cb w-4 h-4 rounded border-gray-700 bg-black/50 text-indigo-500 focus:ring-indigo-500 cursor-pointer transition" value="${slot.id}" onchange="handleCheckbox(this)" />
                                     <div class="text-[10px] text-gray-500 font-bold tracking-widest cursor-default">SLOT</div>
                                 </div>
                                 <div class="text-2xl font-black text-white leading-none">${slot.id}</div>
@@ -309,12 +315,12 @@
                             </div>
                             <div class="flex items-center gap-2 shrink-0 ml-2">
                                 ${slot.isLooping ? 
-                                    `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-900/40 text-purple-400 border border-purple-500/50 animate-pulse shadow-[0_0_8px_rgba(168,85,247,0.3)]">🔄 LOOP</span>` : 
+                                    `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-900/40 text-purple-400 border border-purple-500/50 animate-pulse shadow-[0_0_8px_rgba(168,85,247,0.3)]">🔄 LOOP</span>` :
                                     `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-800 text-gray-500 border border-gray-600 shadow-inner">OFFLINE</span>`
                                 }
                             </div>
                         </div>
-                        <button onclick="editSlot(${slot.id})" class="w-full bg-black/40 hover:bg-black border border-white/5 hover:border-indigo-500/50 transition-all rounded-xl p-3 flex justify-between items-center group/btn active:scale-[0.98]">
+                        <button onclick="editSlot(${slot.id})" class="w-full bg-black/40 hover:bg-black border border-white/5 hover:border-indigo-500/50 transition-all rounded-xl p-3 flex justify-between items-center group/btn">
                             <div class="text-[10px] text-gray-400 group-hover/btn:text-indigo-300 text-left">
                                 <div class="mb-1">📧 <span class="text-white font-bold text-xs">${slot.emails}</span> Emails</div>
                                 <div>🔗 <span class="text-white font-bold text-xs">${slot.links}</span> Links</div>
@@ -322,17 +328,17 @@
                             <div class="text-gray-600 group-hover/btn:text-white transition-colors">✏️</div>
                         </button>
                         ${slot.ip ? 
-                            `<div class="text-[10px] font-mono text-gray-400 mt-3 truncate bg-black/30 p-1.5 rounded-md border border-white/5">IP: <span class="text-white">${slot.ip}</span></div>` : 
+                            `<div class="text-[10px] font-mono text-gray-400 mt-3 truncate bg-black/30 p-1.5 rounded-md border border-white/5">IP: <span class="text-white">${slot.ip}</span></div>` :
                             `<div class="text-[10px] font-mono text-gray-700 mt-3 italic">Waiting for Agent...</div>`
                         }
                     </div>
                     <div class="grid grid-cols-3 gap-1.5 mt-4">
-                        <button onclick="cmd(${slot.id}, 'login')" class="bg-gradient-to-t from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white py-1.5 rounded-lg text-[10px] font-bold transition disabled:opacity-30 active:scale-95 shadow-md border border-blue-600/30 ${slot.isOffline ? 'opacity-50 cursor-not-allowed' : ''}" ${slot.isOffline ? 'disabled' : ''}>LOGIN</button>
-                        <button onclick="cmd(${slot.id}, 'loop')" class="bg-gradient-to-t from-purple-900 to-purple-700 hover:from-purple-800 hover:to-purple-600 text-white py-1.5 rounded-lg text-[10px] font-bold transition disabled:opacity-30 active:scale-95 shadow-md border border-purple-600/30 ${slot.isOffline ? 'opacity-50 cursor-not-allowed' : ''}" ${slot.isOffline ? 'disabled' : ''}>LOOP</button>
-                        <button onclick="viewLogs(${slot.id})" class="bg-[#161b22] hover:bg-[#21262d] text-gray-300 py-1.5 rounded-lg text-[10px] font-bold transition active:scale-95 shadow-md border border-gray-700/50">LOGS</button>
+                        <button onclick="cmd(${slot.id}, 'login')" class="bg-gradient-to-t from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white py-1.5 rounded-lg text-[10px] font-bold transition active:scale-95 shadow-md">🚀</button>
+                        <button onclick="cmd(${slot.id}, 'loop')" class="bg-gradient-to-t from-purple-900 to-purple-700 hover:from-purple-800 hover:to-purple-600 text-white py-1.5 rounded-lg text-[10px] font-bold transition active:scale-95 shadow-md">🔄</button>
+                        <button onclick="viewLogs(${slot.id})" class="bg-[#161b22] hover:bg-[#21262d] text-gray-300 py-1.5 rounded-lg text-[10px] font-bold transition active:scale-95 shadow-md border border-gray-700">📋</button>
                     </div>
                     <div class="mt-1.5">
-                        <button onclick="cmd(${slot.id}, 'stop')" class="w-full bg-gradient-to-t from-red-950 to-red-800 hover:from-red-900 hover:to-red-700 text-red-100 py-1.5 rounded-lg text-[10px] font-bold transition active:scale-95 shadow-md border border-red-800/50">STOP</button>
+                        <button onclick="cmd(${slot.id}, 'stop')" class="w-full bg-gradient-to-t from-red-950 to-red-800 hover:from-red-900 hover:to-red-700 text-red-100 py-1.5 rounded-lg text-[10px] font-bold transition active:scale-95 shadow-md border border-red-900/50">🛑 STOP</button>
                     </div>
                 </div>`;
                 container.innerHTML += cardHTML;
@@ -356,6 +362,32 @@
                 `;
                 list.appendChild(div);
             });
+        }
+
+        // ==================== SMART REFRESH ====================
+        async function checkForChanges() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/slots/check`);
+                const data = await resp.json();
+                
+                if (data.changed) {
+                    // Ada perubahan, update data
+                    allSlots = data.slots;
+                    
+                    // Update stats
+                    const status = await fetch(`${API_BASE}/api/status`);
+                    const stats = await status.json();
+                    
+                    document.getElementById('stat-online').textContent = stats.online;
+                    document.getElementById('stat-busy').textContent = stats.busy;
+                    document.getElementById('stat-data').textContent = stats.data;
+                    
+                    renderCards();
+                    showToast('📡 Dashboard updated (auto-sync)', 'info');
+                }
+            } catch (e) {
+                console.error('Check failed:', e);
+            }
         }
 
         // ==================== API CALLS ====================
@@ -467,7 +499,7 @@
                 
                 if (resp.ok) {
                     showToast(`Command ${action} sent to slot ${slotId}`, 'success');
-                    setTimeout(() => reloadData(), 1000);
+                    setTimeout(() => reloadData(), 1500);
                 } else {
                     showToast('Command failed', 'error');
                 }
@@ -498,7 +530,7 @@
                 
                 if (resp.ok) {
                     showToast(`Mass ${action} executed!`, 'success');
-                    setTimeout(() => reloadData(), 1000);
+                    setTimeout(() => reloadData(), 1500);
                 } else {
                     showToast('Command failed', 'error');
                 }
@@ -559,8 +591,21 @@
             indicator.classList.remove('bg-red-500');
             indicator.classList.add('bg-green-500', 'animate-pulse');
             
-            // Auto refresh every 5 seconds
-            setInterval(() => reloadData(), 5000);
+            // Smart refresh: cek perubahan setiap 3 detik, hanya reload kalau ada perubahan
+            autoRefreshInterval = setInterval(() => checkForChanges(), 3000);
+            
+            // Full reload manual setiap 30 detik (safety)
+            setInterval(() => {
+                if (!isModalOpen) {
+                    console.log('[Auto-Sync] Full safety reload...');
+                    reloadData();
+                }
+            }, 30000);
+        });
+
+        // Cleanup saat page unload
+        window.addEventListener('beforeunload', () => {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
         });
 
         // Expose functions

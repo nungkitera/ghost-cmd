@@ -13,6 +13,20 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # ==========================================
+# CHECK MODE: UPDATE or INSTALL
+# ==========================================
+MODE="${1:-install}"
+
+if [ "$MODE" = "update" ]; then
+    echo "🔄 UPDATE MODE - Pulling latest changes..."
+    cd "$(dirname "$0")"
+    git pull origin main
+    systemctl restart ghost-dashboard
+    echo "✅ Dashboard updated and restarted!"
+    exit 0
+fi
+
+# ==========================================
 # 1. System Update
 # ==========================================
 echo "📦 Updating system packages..."
@@ -130,6 +144,9 @@ echo ""
 echo "🔄 Restart commands:"
 echo "   systemctl restart ghost-dashboard"
 echo "   systemctl restart cloudflared"
+echo ""
+echo "📦 UPDATE CODE (ketika ada perubahan):"
+echo "   cd dashboard && sudo bash install.sh update"
 echo ""
 echo "📋 View Logs:"
 echo "   journalctl -u ghost-dashboard -f"

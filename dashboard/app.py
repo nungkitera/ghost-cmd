@@ -52,6 +52,7 @@ class SlotManager:
     def __init__(self):
         self.slots = {}
         self.lock = threading.Lock()
+        self.last_hash = None  # Track data changes
         self.load_all_slots()
     
     def load_all_slots(self):
@@ -108,6 +109,19 @@ class SlotManager:
     def get_all_slots(self):
         """Get all slots"""
         return list(self.slots.values())
+    
+    def get_hash(self):
+        """Get hash of current data to detect changes"""
+        slots_json = json.dumps(self.get_all_slots(), sort_keys=True)
+        import hashlib
+        return hashlib.md5(slots_json.encode()).hexdigest()
+    
+    def has_changes(self):
+        """Check if data has changed since last check"""
+        current_hash = self.get_hash()
+        changed = current_hash != self.last_hash
+        self.last_hash = current_hash
+        return changed
     
     def update_slot_status(self, slot_id, status, ip=None):
         """Update slot status from agent report"""
@@ -172,6 +186,18 @@ def status():
 def get_slots():
     """Get all slots data"""
     return jsonify(slot_manager.get_all_slots())
+
+@app.route('/api/slots/check')
+def check_changes():
+    """Check if slots data has changed (untuk smart refresh)"""
+    # Reload dari disk
+    slot_manager.load_all_slots()
+    has_changes = slot_manager.has_changes()
+    
+    return jsonify({
+        "changed": has_changes,
+        "slots": slot_manager.get_all_slots() if has_changes else None
+    })
 
 @app.route('/api/slot/<int:slot_id>', methods=['GET', 'POST'])
 @require_auth
